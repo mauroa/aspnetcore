@@ -241,10 +241,16 @@ if ($DumpProcesses -or $CI) {
 
 # Project selection
 if ($Projects) {
-    if (![System.IO.Path]::IsPathRooted($Projects))
-    {
-        $Projects = Join-Path (Get-Location) $Projects
-    }
+    $Projects = ($Projects.Split(';') | ForEach-Object {
+        if ([string]::IsNullOrEmpty($_) -or [System.IO.Path]::IsPathRooted($_))
+        {
+            $_
+        }
+        else
+        {
+            Join-Path (Get-Location) $_
+        }
+    }) -join ';'
 }
 # When adding new sub-group build flags, add them to this check.
 elseif (-not ($All -or $BuildNative -or $BuildManaged -or $BuildNodeJS -or $BuildInstallers -or $BuildJava)) {
@@ -321,10 +327,11 @@ if ($RuntimeSourceFeed -or $RuntimeSourceFeedKey) {
 
 if ($All) { $dotnetBuildArguments += '/p:BuildAllProjects=true' }
 if ($Projects) {
+    $projectToBuild = '\"' + $Projects + '\"'
     if ($BuildNative) {
-        $MSBuildOnlyArguments += "/p:ProjectToBuild=$Projects"
+        $MSBuildOnlyArguments += "/p:ProjectToBuild=$projectToBuild"
     } else {
-        $dotnetBuildArguments += "/p:ProjectToBuild=$Projects"
+        $dotnetBuildArguments += "/p:ProjectToBuild=$projectToBuild"
     }
 }
 
